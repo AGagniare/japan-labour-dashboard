@@ -8,3 +8,7 @@ venv/
 .venv/
 *.egg-info/
 dist/
+.pytest_cache/
+.streamlit/
+*.log
+env/
