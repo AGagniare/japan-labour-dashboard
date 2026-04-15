@@ -47,7 +47,7 @@ st.divider()
 
 
 # ── Load data ─────────────────────────────────────────────────────────────────
-api_key = os.getenv("ESTAT_API_KEY")
+api_key = st.secrets.get("ESTAT_API_KEY") or os.getenv("ESTAT_API_KEY")
 
 
 @st.cache_data(ttl=3600, show_spinner="Loading labour market data…")
