@@ -1,7 +1,6 @@
 """Japan Labour Market Dashboard — Streamlit entry point."""
 from __future__ import annotations
 
-import io
 import os
 from datetime import date
 
