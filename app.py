@@ -147,19 +147,19 @@ c1, c2, c3, c4 = st.columns(4)
 
 c1.metric(
     "Job-to-Applicant Ratio",
-    f"{kpis['job_ratio_latest']:.2f}" if kpis.get("job_ratio_latest") else "N/A",
+    f"{kpis['job_ratio_latest']:.2f}" if kpis.get("job_ratio_latest") is not None else "N/A",
     delta=f"{kpis['job_ratio_delta']:+.2f}" if kpis.get("job_ratio_delta") is not None else None,
     help="有効求人倍率 — national, all industries, latest month.",
 )
 c2.metric(
     "IT Sector Ratio",
-    f"{kpis['it_ratio_latest']:.2f}" if kpis.get("it_ratio_latest") else "N/A",
+    f"{kpis['it_ratio_latest']:.2f}" if kpis.get("it_ratio_latest") is not None else "N/A",
     delta=f"{kpis['it_ratio_delta']:+.2f}" if kpis.get("it_ratio_delta") is not None else None,
     help="Job-to-applicant ratio for IT / information services.",
 )
 c3.metric(
     "Unemployment Rate",
-    f"{kpis['unemployment_latest']:.1f}%" if kpis.get("unemployment_latest") else "N/A",
+    f"{kpis['unemployment_latest']:.1f}%" if kpis.get("unemployment_latest") is not None else "N/A",
     delta=f"{kpis['unemployment_delta']:+.2f}pp" if kpis.get("unemployment_delta") is not None else None,
     delta_color="inverse",
 )
