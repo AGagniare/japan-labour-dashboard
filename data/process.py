@@ -29,13 +29,17 @@ def _detect_col(df: pd.DataFrame, *keywords: str) -> str | None:
 
 def _parse_month_label(label: str) -> pd.Timestamp | None:
     """
-    Convert e-Stat month labels to Timestamps.
+    Convert e-Stat date labels to Timestamps.
     Handles:
-      - '2024年1月'  →  Timestamp('2024-01-01')
+      - '2024年1月'   →  Timestamp('2024-01-01')
+      - '2024年度'    →  Timestamp('2024-04-01')  (fiscal year start)
       - '2024010000' →  Timestamp('2024-01-01')
     """
     s = str(label).strip()
     try:
+        if "年度" in s:
+            year = int(s.replace("年度", ""))
+            return pd.Timestamp(year=year, month=4, day=1)
         if "年" in s and "月" in s:
             year = int(s.split("年")[0])
             month = int(s.split("年")[1].replace("月", ""))
@@ -58,16 +62,16 @@ def process_job_ratio(df: pd.DataFrame) -> pd.DataFrame:
     """
     df = df.copy().dropna(subset=["value"])
 
-    # Parse date
-    time_col = _detect_col(df, "時間軸", "time")
+    # Parse date — handles "時間軸（月次）", "調査年", etc.
+    time_col = _detect_col(df, "時間軸", "調査年", "time")
     if time_col:
         df["date"] = df[time_col].apply(_parse_month_label)
         df = df.dropna(subset=["date"])
     else:
         return pd.DataFrame(columns=["date", "area", "industry", "ratio"])
 
-    # Map prefecture codes / names to English
-    area_col = _detect_col(df, "都道府県", "area")
+    # Map prefecture/region names to English — handles "都道府県" and "地域"
+    area_col = _detect_col(df, "都道府県", "地域", "area")
     if area_col:
         df["area"] = df[area_col].map(PREFECTURE_MAP).fillna(df[area_col])
     else:
@@ -107,10 +111,17 @@ def process_unemployment(df: pd.DataFrame) -> pd.DataFrame:
     else:
         return pd.DataFrame(columns=["date", "unemployment_rate"])
 
-    # Filter to unemployment rate rows if a tab/label column exists
+    # Filter to unemployment rate rows.
+    # For 0003005865: 就業状態 column has "完全失業者"; 表章項目 has "率".
+    # Accept rows that look like a rate/unemployment measure.
+    status_col = _detect_col(df, "就業状態")
     tab_col = _detect_col(df, "表章項目", "tab")
-    if tab_col:
-        mask = df[tab_col].str.contains("失業率", na=False)
+    if status_col:
+        mask = df[status_col].str.contains("失業", na=False)
+        if mask.any():
+            df = df[mask]
+    elif tab_col:
+        mask = df[tab_col].str.contains("失業率|率", na=False)
         if mask.any():
             df = df[mask]
 

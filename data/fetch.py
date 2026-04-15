@@ -17,8 +17,14 @@ CACHE_DIR = Path(__file__).parent / "cache"
 CACHE_TTL_DAYS = 7
 ESTAT_BASE = "https://api.e-stat.go.jp/rest/3.0/app/json/getStatsData"
 
-STATS_JOB_RATIO = "0000010070"    # 職業安定業務統計 — job-to-applicant ratio
-STATS_LABOUR_FORCE = "0003001783"  # 労働力調査 — unemployment rate
+STATS_JOB_RATIO = "0000010106"    # 社会・人口統計体系 — annual job-to-applicant ratio by prefecture
+STATS_LABOUR_FORCE = "0003005865"  # 労働力調査 — monthly unemployment/employment rates
+
+# Extra filter params passed to the API for each dataset to limit response size
+_STATS_EXTRA_PARAMS: dict[str, dict] = {
+    "0000010106": {"cdCat01": "F310301"},          # job-to-applicant ratio only
+    "0003005865": {"cdTab": "02", "cdCat02": "08", "cdCat03": "0"},  # unemployment rate, total
+}
 
 
 def _cache_path(stats_id: str) -> Path:
@@ -85,7 +91,7 @@ def _parse_estat_response(data: dict) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
-def fetch_from_api(stats_id: str, api_key: str) -> pd.DataFrame:
+def fetch_from_api(stats_id: str, api_key: str, extra_params: dict | None = None) -> pd.DataFrame:
     """
     Fetch a stats dataset directly from the e-Stat API.
     Raises requests.HTTPError or ValueError on failure.
@@ -101,6 +107,8 @@ def fetch_from_api(stats_id: str, api_key: str) -> pd.DataFrame:
         "replaceSpChars": "0",
         "limit": "100000",
     }
+    if extra_params:
+        params.update(extra_params)
     resp = requests.get(ESTAT_BASE, params=params, timeout=30)
     resp.raise_for_status()
     data = resp.json()
@@ -155,10 +163,11 @@ def get_dataset(
 
     if api_key:
         try:
-            df = fetch_from_api(stats_id, api_key)
+            extra = _STATS_EXTRA_PARAMS.get(stats_id)
+            df = fetch_from_api(stats_id, api_key, extra_params=extra)
             df.to_csv(cache_path, index=False)
             return df, "api"
-        except Exception as exc:
+        except Exception as exc:  # broad catch: fall back to stale cache on any API or parse failure
             logger.warning("API fetch failed for %s: %s", stats_id, exc)
 
     if cache_path.exists():
