@@ -114,3 +114,4 @@ pytest tests/ -v
 
 **Arthur Gagniare**
 [linkedin.com/in/arthurgagniare](https://linkedin.com/in/arthurgagniare) · [agagniare.github.io/AGagniare-Portfolio](https://agagniare.github.io/AGagniare-Portfolio)
+
